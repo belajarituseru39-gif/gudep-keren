@@ -50,6 +50,7 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
     <button class="active" data-view="dashboard">Ringkasan</button><button data-view="identity">Identitas Gudep</button><button data-view="members">Peserta Didik</button><button data-view="adults">Pembina & Dewasa</button><button data-view="activities">Kegiatan & Prestasi</button><button data-view="facilities">Sarana & Catatan</button>
   </nav>
   <section class="panel active" id="view-dashboard">
+    <div class="card" style="margin-bottom:16px"><div class="card-head"><h3>Profil Gudep</h3><button class="btn small" data-goto="identity">Lengkapi identitas</button></div><div id="identity-summary" class="muted"></div></div>
     <div class="stats">
       <div class="stat"><div class="label">Peserta didik aktif</div><div class="num" id="stat-members">0</div><div class="hint">Siaga sampai Pandega</div></div>
       <div class="stat"><div class="label">Putra</div><div class="num" id="stat-boys">0</div><div class="hint">Anggota aktif</div></div>
@@ -58,9 +59,8 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
     </div>
     <div class="summary-grid">
       <article class="card"><h3>Peserta didik per golongan</h3><div id="member-summary"></div></article>
-      <article class="card"><h3>Anggota dewasa per kualifikasi</h3><div id="adult-summary"></div></article>
+      <article class="card"><h3>Pembina & dewasa menurut golongan yang dibina</h3><div id="adult-summary"></div></article>
     </div>
-    <div class="card" style="margin-top:16px"><div class="card-head"><h3>Profil Gudep</h3><button class="btn small" data-goto="identity">Lengkapi identitas</button></div><div id="identity-summary" class="muted"></div></div>
   </section>
   <section class="panel" id="view-identity">
     <div class="card"><h3>Identitas dan periode laporan</h3><form id="identity-form"><div class="formgrid">
@@ -171,8 +171,10 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
     $("#stat-girls").textContent=nMember("Putri");
     $("#stat-adults").textContent=data.adults.length;
     $("#member-summary").innerHTML='<table><thead><tr><th>Golongan</th><th>Putra</th><th>Putri</th><th>Jumlah</th></tr></thead><tbody>'+["Siaga","Penggalang","Penegak","Pandega"].map(g=>'<tr><td>'+g+'</td><td>'+nMember("Putra",g)+'</td><td>'+nMember("Putri",g)+'</td><td>'+nMember("",g)+'</td></tr>').join("")+'<tr><th>Total</th><th>'+nMember("Putra")+'</th><th>'+nMember("Putri")+'</th><th>'+members.length+'</th></tr></tbody></table>';
-    const courses=["Belum kursus","Orientasi","KMD","KML","KPD","KPL","Lainnya"];
-    $("#adult-summary").innerHTML='<table><thead><tr><th>Kualifikasi</th><th>Jumlah</th></tr></thead><tbody>'+courses.map(c=>'<tr><td>'+c+'</td><td>'+data.adults.filter(a=>a.course===c).length+'</td></tr>').join("")+'</tbody></table>';
+    const adultGroups=["Siaga","Penggalang","Penegak","Pandega"];
+    const adultByGroup=(gender,group)=>data.adults.filter(a=>a.gender===gender&&a.group===group).length;
+    const adultGenderTotal=gender=>data.adults.filter(a=>a.gender===gender).length;
+    $("#adult-summary").innerHTML='<table><thead><tr><th>Golongan yang dibina</th><th>Putra</th><th>Putri</th><th>Jumlah</th></tr></thead><tbody>'+adultGroups.map(g=>'<tr><td>'+g+'</td><td>'+adultByGroup("Putra",g)+'</td><td>'+adultByGroup("Putri",g)+'</td><td>'+data.adults.filter(a=>a.group===g).length+'</td></tr>').join("")+'<tr><th>Total</th><th>'+adultGenderTotal("Putra")+'</th><th>'+adultGenderTotal("Putri")+'</th><th>'+data.adults.length+'</th></tr></tbody></table><p class="list-note">Jumlah pembina dan anggota dewasa dipisahkan menurut jenis kelamin dan golongan peserta didik yang dibina.</p>';
     const id=data.identity;
     const pairs=[["Gudep Putra / Putri",[id.numberBoys,id.numberGirls].filter(Boolean).join(" / ")],["Pangkalan",id.baseName],["Kwarran / Kwarcab",[id.kwarran,id.kwarcab].filter(Boolean).join(" / ")],["Tahun laporan",id.reportYear]];
     $("#identity-summary").innerHTML=pairs.map(p=>'<div style="margin:5px 0"><strong>'+esc(p[0])+':</strong> '+(p[1]?esc(p[1]):'<span class="muted">Belum diisi</span>')+'</div>').join("");
