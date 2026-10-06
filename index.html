@@ -150,7 +150,9 @@ body.print-sismintir #print-area{font:8pt/1.2 Arial,sans-serif}body.print-sismin
   function syncMemberAge(form){const birth=form.elements.namedItem("birthDate"),age=form.elements.namedItem("ageDisplay"),group=form.elements.namedItem("group"),level=form.elements.namedItem("level");if(!birth||!age||!group||!level)return;const n=ageToday(birth.value),g=groupAtAge(n),previous=level.value;age.value=n===""?"":n;group.value=g;setOptions(level,"Pilih TKU sesuai capaian",tkuByGroup[g]||[],previous,true);const garuda=form.elements.namedItem("garuda");if(garuda){const oldGaruda=garuda.value;const gOption=g&&tkuByGroup[g]?g+" Garuda":"";setOptions(garuda,"Belum / belum dicatat",gOption?[gOption]:[],oldGaruda,false)}const tkk=form.elements.namedItem("tkkHighest");if(tkk){const prior=tkk.value;setOptions(tkk,"Pilih tingkat TKK tertinggi",tkkByGroup[g]||[],prior,true)}}
   function syncAdultAge(form){const birth=form.elements.namedItem("birthDate"),age=form.elements.namedItem("ageDisplay");if(birth&&age){const n=ageToday(birth.value);age.value=n===""?"":n}}
   function listRows(key,cols,renderRow){
-    const tbody=$("#"+key+"-rows");
+    const rowIds={members:"member-rows",adults:"adult-rows",activities:"activity-rows"};
+    const tbody=$("#"+(rowIds[key]||key+"-rows"));
+    if(!tbody)return;
     tbody.innerHTML=data[key].length?data[key].map((item,i)=>renderRow(item,i)).join(""):emptyRow(cols,"Belum ada data. Gunakan tombol tambah untuk mulai mengisi.");
   }
   function activeMembers(){return data.members.filter(m=>m.active!=="false"&&m.active!==false)}
