@@ -38,8 +38,8 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
     <button class="btn light" id="export-btn">Simpan Cadangan</button>
     <button class="btn light" id="import-btn">Pulihkan Data</button>
     <button class="btn light" id="roster-btn">Cetak Biodata</button>
-    <button class="btn light" id="sismintir-btn">Cetak Format Sismintir</button>
     <button class="btn light" id="print-btn">Cetak Laporan</button>
+    <button class="btn light" id="report-excel-btn">Unduh Laporan Excel</button>
     <input type="file" id="import-file" accept=".json,application/json" hidden>
   </div>
 </header>
@@ -235,6 +235,42 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
   function countTable(title, rows, headers){
     return '<div class="section"><h2>'+title+'</h2><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c==null?"":c)+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
   }
+  function tkuLevelRows(members){
+    const levels={Siaga:["Calon","Siaga Mula","Siaga Bantu","Siaga Tata"],Penggalang:["Calon","Penggalang Ramu","Penggalang Rakit","Penggalang Terap"],Penegak:["Calon","Penegak Bantara","Penegak Laksana"],Pandega:["Calon","Pandega"]};
+    const rows=[];
+    Object.keys(levels).forEach(group=>{const recorded=members.filter(m=>m.group===group&&m.level).map(m=>m.level);const items=levels[group].concat([...new Set(recorded.filter(x=>!levels[group].includes(x)))]);items.forEach(level=>{const people=members.filter(m=>m.group===group&&m.level===level);rows.push([group,level,people.filter(m=>m.gender==="Putra").length,people.filter(m=>m.gender==="Putri").length,people.length])})});
+    const withLevel=members.filter(m=>m.level);rows.push(["","TOTAL TINGKAT TERCATAT",withLevel.filter(m=>m.gender==="Putra").length,withLevel.filter(m=>m.gender==="Putri").length,withLevel.length]);
+    return rows;
+  }
+  function courseBreakdown(adults){
+    const courses=["Belum kursus","Orientasi","KMD","KML","KPD","KPL","Lainnya"];
+    const recorded=adults.map(a=>a.course||"Belum kursus");
+    const items=courses.concat([...new Set(recorded.filter(x=>!courses.includes(x)))]);
+    const rows=items.map(course=>[course,adults.filter(a=>(a.course||"Belum kursus")===course&&a.gender==="Putra").length,adults.filter(a=>(a.course||"Belum kursus")===course&&a.gender==="Putri").length,adults.filter(a=>(a.course||"Belum kursus")===course).length]);
+    rows.push(["TOTAL",adults.filter(a=>a.gender==="Putra").length,adults.filter(a=>a.gender==="Putri").length,adults.length]);
+    return rows;
+  }
+  function downloadReportExcel(){
+    if(!requireXlsx())return;
+    const id=data.identity, year=id.reportYear||new Date().getFullYear(), members=activeMembers(), adults=data.adults.filter(a=>a.active!=="false"&&a.active!==false), groups=["Siaga","Penggalang","Penegak","Pandega"];
+    const wb=XLSX.utils.book_new();
+    function addSheet(name,rows,widths){const ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=widths.map(w=>({wch:w}));if(rows.length>1)ws['!autofilter']={ref:XLSX.utils.encode_range({s:{r:0,c:0},e:{r:rows.length-1,c:Math.max(...rows.map(r=>r.length))-1}})};XLSX.utils.book_append_sheet(wb,ws,name)}
+    addSheet("Identitas",[["Data Gudep","Keterangan"],["Tahun laporan",year],["Nomor Gudep Putra",id.numberBoys||""],["Nomor Gudep Putri",id.numberGirls||""],["Pangkalan / Sekolah",id.baseName||""],["Kwartir Ranting",id.kwarran||""],["Kwartir Cabang",id.kwarcab||""],["Alamat",id.address||""],["Ka. Mabigus",id.mabigus||""],["Ketua Gudep",id.leader||""],["Musyawarah Gudep terakhir",id.lastMugus||""],["Kontak Gudep",id.contact||""]],[30,45]);
+    const memberRows=[["Golongan","Putra","Putri","Jumlah"],...groups.map(g=>[g,members.filter(m=>m.group===g&&m.gender==="Putra").length,members.filter(m=>m.group===g&&m.gender==="Putri").length,members.filter(m=>m.group===g).length]),["TOTAL",members.filter(m=>m.gender==="Putra").length,members.filter(m=>m.gender==="Putri").length,members.length]];
+    addSheet("Peserta Didik",memberRows,[22,14,14,14]);
+    addSheet("Tingkatan TKU",[["Golongan","Tingkatan TKU","Putra","Putri","Jumlah"],...tkuLevelRows(members)],[22,28,14,14,14]);
+    const garudaRows=[["Golongan","Putra","Putri","Jumlah"],...groups.map(g=>[g,members.filter(m=>m.group===g&&m.gender==="Putra"&&m.garuda===g+" Garuda").length,members.filter(m=>m.group===g&&m.gender==="Putri"&&m.garuda===g+" Garuda").length,members.filter(m=>m.group===g&&m.garuda===g+" Garuda").length])];
+    const tkkRows=[["Golongan","Tingkat TKK tertinggi","Putra","Putri","Jumlah"]];groups.forEach(g=>(tkkByGroup[g]||[]).forEach(level=>{const people=members.filter(m=>m.group===g&&m.tkkHighest===level);tkkRows.push([g,level,people.filter(m=>m.gender==="Putra").length,people.filter(m=>m.gender==="Putri").length,people.length])}));
+    addSheet("Garuda dan TKK",[...garudaRows,[],...tkkRows],[22,30,14,14,14]);
+    const roles=["Pembina","Pembantu Pembina","Mabigus","Pengurus","Lainnya"];
+    const adultRoles=[["Jenis / Jabatan","Putra","Putri","Jumlah"],...roles.map(role=>[role,adults.filter(a=>a.role===role&&a.gender==="Putra").length,adults.filter(a=>a.role===role&&a.gender==="Putri").length,adults.filter(a=>a.role===role).length]),["TOTAL",adults.filter(a=>a.gender==="Putra").length,adults.filter(a=>a.gender==="Putri").length,adults.length]];
+    addSheet("Pembina Dewasa",adultRoles,[28,14,14,14]);
+    addSheet("Kursus",[["Kualifikasi kursus","Putra","Putri","Jumlah"],...courseBreakdown(adults)],[28,14,14,14]);
+    const activities=data.activities.filter(a=>String(a.year)===String(year));
+    addSheet("Kegiatan",[["Nama kegiatan / prestasi","Tingkat","Tahun","Keterangan"],...activities.map(a=>[a.name,a.level,a.year,a.note||""])],[38,20,12,48]);
+    addSheet("Sarana dan Catatan",[["Bagian","Keterangan"],["Sarana / prasarana tersedia",data.facilities||""],["Kebutuhan atau kendala",data.needs||""]],[34,80]);
+    XLSX.writeFile(wb,"Laporan-Potensi-Gudep-"+year+".xlsx",{compression:true});
+  }
   function makeReport(){
     const id=data.identity, mem=activeMembers(), adult=data.adults;
     const header='<h1>GERAKAN PRAMUKA</h1><h1>LAPORAN POTENSI GUGUS DEPAN</h1><p class="report-sub">Tahun '+esc(id.reportYear||new Date().getFullYear())+'</p>';
@@ -245,7 +281,7 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
     rows.push(["TOTAL",mem.filter(m=>m.gender==="Putra").length,mem.filter(m=>m.gender==="Putri").length,mem.length]);
     const member=countTable("B. Potensi Peserta Didik",rows,["Golongan","Putra","Putri","Jumlah"]);
     const skuGroups=["Siaga","Penggalang","Penegak","Pandega"];
-    const tkuRows=skuGroups.map(g=>{const a=mem.filter(m=>m.group===g&&m.level);return [g,Array.from(new Set(a.map(m=>m.level))).join(", ")||"—",a.filter(m=>m.gender==="Putra").length,a.filter(m=>m.gender==="Putri").length,a.length]});
+    const tkuRows=tkuLevelRows(mem);
     const sku=countTable("C. Tingkatan TKU yang tercatat",tkuRows,["Golongan","Tingkatan TKU","Putra","Putri","Jumlah"]);
     const garudaTable=countTable("D. Status Pramuka Garuda",skuGroups.map(g=>[g,mem.filter(m=>m.garuda===g+" Garuda").length]),["Golongan","Jumlah Pramuka Garuda"]);
     const tkkRows=skuGroups.map(g=>[g,(tkkByGroup[g]||[]).map(t=>t+": "+mem.filter(m=>m.group===g&&m.tkkHighest===t).length).join("; ")||"—"]);
@@ -255,7 +291,7 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
     adultRows.push(["TOTAL",adult.filter(a=>a.gender==="Putra").length,adult.filter(a=>a.gender==="Putri").length,adult.length]);
     const adultTable=countTable("F. Anggota Dewasa",adultRows,["Jenis / Jabatan","Putra","Putri","Jumlah"]);
     const courses=["Belum kursus","Orientasi","KMD","KML","KPD","KPL","Lainnya"];
-    const courseTable=countTable("Rekap kursus anggota dewasa",courses.map(c=>[c,adult.filter(a=>a.course===c).length]),["Kualifikasi","Jumlah"]);
+    const courseTable=countTable("Rekap kursus anggota dewasa",courseBreakdown(adult),["Kualifikasi","Putra","Putri","Jumlah"]);
     const actRows=data.activities.filter(a=>String(a.year)===String(id.reportYear||new Date().getFullYear())).map(a=>[a.name,a.level,a.year,a.note||""]);
     while(actRows.length<3)actRows.push(["","","",""]);
     const activity=countTable("G. Kegiatan dan Prestasi Tahun Laporan",actRows,["Nama kegiatan / prestasi","Tingkat","Tahun","Keterangan"]);
@@ -344,7 +380,7 @@ body.print-sismintir #print-area{font:8pt/1.22 Arial,sans-serif;color:#111}body.
     document.body.classList.remove("print-biodata","print-sismintir");document.body.classList.add("print-sismintir");window.print();
   }
   window.addEventListener("afterprint",()=>document.body.classList.remove("print-biodata","print-sismintir"));
-  $("#print-btn").onclick=printReport;$("#hero-print").onclick=printReport;$("#roster-btn").onclick=printRoster;$("#sismintir-btn").onclick=printSismintir;
+  $("#print-btn").onclick=printReport;$("#hero-print").onclick=printReport;$("#roster-btn").onclick=printRoster;$("#report-excel-btn").onclick=downloadReportExcel;
   render();
 })();
 </script>
