@@ -239,10 +239,11 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
     return '<div class="section"><h2>'+title+'</h2><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c==null?"":c)+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
   }
   function highestMemberLevel(member){return member?.group&&member.garuda===member.group+" Garuda"?member.group+" Garuda":normalizeTku(member?.level,member?.group)}
+  function tkuReportLabel(member){const level=highestMemberLevel(member);if(!level)return "";if(level===member.group+" Garuda"||level==="Garuda")return "Garuda";if(level==="Calon")return "Calon";const prefix=member.group+" ";return level.startsWith(prefix)?level.slice(prefix.length):level}
   function tkuLevelRows(members){
-    const levels={Siaga:["Calon","Siaga Mula","Siaga Bantu","Siaga Tata"],Penggalang:["Calon","Penggalang Ramu","Penggalang Rakit","Penggalang Terap"],Penegak:["Calon","Penegak Bantara","Penegak Laksana"],Pandega:["Calon","Pandega"]};
+    const levels={Siaga:["Calon","Mula","Bantu","Tata"],Penggalang:["Calon","Ramu","Rakit","Terap"],Penegak:["Calon","Bantara","Laksana"],Pandega:["Calon","Pandega"]};
     const rows=[];
-    Object.keys(levels).forEach(group=>{const recorded=members.filter(m=>m.group===group&&m.level&&m.garuda!==group+" Garuda").map(m=>normalizeTku(m.level,group));const items=levels[group].concat([...new Set(recorded.filter(x=>!levels[group].includes(x)))],group+" Garuda");items.forEach(level=>{const people=members.filter(m=>m.group===group&&highestMemberLevel(m)===level);rows.push([group,level,people.filter(m=>m.gender==="Putra").length,people.filter(m=>m.gender==="Putri").length,people.length])})});
+    Object.keys(levels).forEach(group=>{const recorded=members.filter(m=>m.group===group&&m.level&&m.garuda!==group+" Garuda").map(m=>tkuReportLabel(m));const items=levels[group].concat([...new Set(recorded.filter(x=>!levels[group].includes(x)))],"Garuda");items.forEach(level=>{const people=members.filter(m=>m.group===group&&tkuReportLabel(m)===level);rows.push([group,level,people.filter(m=>m.gender==="Putra").length,people.filter(m=>m.gender==="Putri").length,people.length])})});
     const withLevel=members.filter(m=>highestMemberLevel(m));rows.push(["","TOTAL TINGKAT TERCATAT",withLevel.filter(m=>m.gender==="Putra").length,withLevel.filter(m=>m.gender==="Putri").length,withLevel.length]);
     return rows;
   }
