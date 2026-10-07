@@ -96,7 +96,7 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
         <div class="field full"><label>Tempat tinggal sekarang</label><textarea name="address"></textarea></div>
       </div><p class="list-note">Golongan otomatis: Siaga 7–10, Penggalang 11–15, Penegak 16–20, Pandega 21–25 tahun. Pilih TKU sesuai pencapaian. Pramuka Garuda dicatat tersendiri; tingkat TKK mengikuti golongan.</p><div class="form-actions"><button class="btn" type="button" data-cancel="member-form">Batal</button><button class="btn primary" type="submit">Simpan peserta</button></div></form>
       <div class="card-head upload-head"><h3>Impor dari Excel</h3><div class="upload-actions"><button class="btn small" type="button" data-template="members">Unduh template Excel</button><button class="btn small primary" type="button" data-upload="members">Unggah Excel</button><input type="file" id="members-excel" accept=".xlsx,.xls" hidden></div></div><p class="list-note">Isi template lalu unggah file .xlsx atau .xls. Kolom bertanda * wajib diisi. Data baru ditambahkan ke daftar, baris ganda dilewati.</p>
-      <div class="table-wrap"><table><thead><tr><th>KTA</th><th>Nama</th><th>Pa/Pi</th><th>Usia</th><th>Golongan otomatis</th><th>Tingkatan TKU</th><th>Garuda</th><th>TKK tertinggi</th><th></th></tr></thead><tbody id="member-rows"></tbody></table></div><p class="list-note">Laporan potensi tetap mencetak rekap, sedangkan tombol Cetak Biodata mencetak daftar rinci.</p>
+      <div class="table-wrap"><table><thead><tr><th>KTA</th><th>Nama</th><th>Pa/Pi</th><th>Usia</th><th>Golongan otomatis</th><th>Tingkatan tertinggi</th><th>Garuda</th><th>TKK tertinggi</th><th></th></tr></thead><tbody id="member-rows"></tbody></table></div><p class="list-note">Laporan potensi tetap mencetak rekap, sedangkan tombol Cetak Biodata mencetak daftar rinci.</p>
     </div>
   </section>
   <section class="panel" id="view-adults">
@@ -185,7 +185,7 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
     ["numberBoys","numberGirls","baseName","kwarran","kwarcab","address","mabigus","leader","lastMugus","contact"].forEach(k=>$("#identity-form").elements.namedItem(k).value=id[k]||"");
     syncMemberAge($("#member-form"));syncAdultAge($("#adult-form"));
     const f=$("#facilities-form");f.elements.namedItem("facilities").value=data.facilities||"";f.elements.namedItem("needs").value=data.needs||"";
-    listRows("members",9,(m,i)=>'<tr><td>'+esc(m.kta||m.code||"—")+'</td><td><strong>'+esc(m.name)+'</strong></td><td>'+esc(m.gender==="Putra"?"Pa":m.gender==="Putri"?"Pi":m.gender||"—")+'</td><td>'+esc(ageToday(m.birthDate)||"—")+'</td><td>'+esc(m.group||"—")+'</td><td>'+esc(normalizeTku(m.level,m.group)||"—")+'</td><td>'+esc(m.garuda||"—")+'</td><td>'+esc(m.tkkHighest||"—")+'</td><td><button class="btn small" data-edit="members" data-index="'+i+'">Ubah</button> <button class="btn small danger" data-delete="members" data-index="'+i+'" aria-label="Hapus peserta">Hapus</button></td></tr>');
+    listRows("members",9,(m,i)=>'<tr><td>'+esc(m.kta||m.code||"—")+'</td><td><strong>'+esc(m.name)+'</strong></td><td>'+esc(m.gender==="Putra"?"Pa":m.gender==="Putri"?"Pi":m.gender||"—")+'</td><td>'+esc(ageToday(m.birthDate)||"—")+'</td><td>'+esc(m.group||"—")+'</td><td>'+esc(highestMemberLevel(m)||"—")+'</td><td>'+esc(m.garuda||"—")+'</td><td>'+esc(m.tkkHighest||"—")+'</td><td><button class="btn small" data-edit="members" data-index="'+i+'">Ubah</button> <button class="btn small danger" data-delete="members" data-index="'+i+'" aria-label="Hapus peserta">Hapus</button></td></tr>');
     listRows("adults",8,(a,i)=>'<tr><td>'+esc(a.kta||"—")+'</td><td><strong>'+esc(a.name)+'</strong></td><td>'+esc(a.gender==="Putra"?"Pa":a.gender==="Putri"?"Pi":a.gender||"—")+'</td><td>'+esc(ageToday(a.birthDate)||"—")+'</td><td>'+esc(a.group||"—")+'</td><td>'+esc(a.role||"—")+'</td><td>'+esc(a.course||"—")+'</td><td><button class="btn small" data-edit="adults" data-index="'+i+'">Ubah</button> <button class="btn small danger" data-delete="adults" data-index="'+i+'">Hapus</button></td></tr>');
     listRows("activities",5,(a,i)=>'<tr><td><strong>'+esc(a.name)+'</strong></td><td>'+esc(a.level)+'</td><td>'+esc(a.year)+'</td><td>'+esc(a.note||"—")+'</td><td><button class="btn small danger" data-delete="activities" data-index="'+i+'">Hapus</button></td></tr>');
     localStorage.setItem(KEY,JSON.stringify(data));
@@ -238,11 +238,12 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
   function countTable(title, rows, headers){
     return '<div class="section"><h2>'+title+'</h2><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join("")+'</tr></thead><tbody>'+rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c==null?"":c)+'</td>').join("")+'</tr>').join("")+'</tbody></table></div>';
   }
+  function highestMemberLevel(member){return member?.group&&member.garuda===member.group+" Garuda"?member.group+" Garuda":normalizeTku(member?.level,member?.group)}
   function tkuLevelRows(members){
     const levels={Siaga:["Calon","Siaga Mula","Siaga Bantu","Siaga Tata"],Penggalang:["Calon","Penggalang Ramu","Penggalang Rakit","Penggalang Terap"],Penegak:["Calon","Penegak Bantara","Penegak Laksana"],Pandega:["Calon","Pandega"]};
     const rows=[];
-    Object.keys(levels).forEach(group=>{const recorded=members.filter(m=>m.group===group&&m.level).map(m=>normalizeTku(m.level,group));const items=levels[group].concat([...new Set(recorded.filter(x=>!levels[group].includes(x)))]);items.forEach(level=>{const people=members.filter(m=>m.group===group&&normalizeTku(m.level,group)===level);rows.push([group,level,people.filter(m=>m.gender==="Putra").length,people.filter(m=>m.gender==="Putri").length,people.length])})});
-    const withLevel=members.filter(m=>m.level);rows.push(["","TOTAL TINGKAT TERCATAT",withLevel.filter(m=>m.gender==="Putra").length,withLevel.filter(m=>m.gender==="Putri").length,withLevel.length]);
+    Object.keys(levels).forEach(group=>{const recorded=members.filter(m=>m.group===group&&m.level&&m.garuda!==group+" Garuda").map(m=>normalizeTku(m.level,group));const items=levels[group].concat([...new Set(recorded.filter(x=>!levels[group].includes(x)))],group+" Garuda");items.forEach(level=>{const people=members.filter(m=>m.group===group&&highestMemberLevel(m)===level);rows.push([group,level,people.filter(m=>m.gender==="Putra").length,people.filter(m=>m.gender==="Putri").length,people.length])})});
+    const withLevel=members.filter(m=>highestMemberLevel(m));rows.push(["","TOTAL TINGKAT TERCATAT",withLevel.filter(m=>m.gender==="Putra").length,withLevel.filter(m=>m.gender==="Putri").length,withLevel.length]);
     return rows;
   }
   function normalizeTku(value,group){const raw=String(value||"").trim().replace(/\s+/g," ");if(!raw)return "";const key=raw.toLowerCase();const choices={Siaga:{calon:"Calon",mula:"Siaga Mula","siaga mula":"Siaga Mula",bantu:"Siaga Bantu","siaga bantu":"Siaga Bantu",tata:"Siaga Tata","siaga tata":"Siaga Tata"},Penggalang:{calon:"Calon",ramu:"Penggalang Ramu","penggalang ramu":"Penggalang Ramu",rakit:"Penggalang Rakit","penggalang rakit":"Penggalang Rakit",terap:"Penggalang Terap","penggalang terap":"Penggalang Terap"},Penegak:{calon:"Calon",bantara:"Penegak Bantara","penegak bantara":"Penegak Bantara",laksana:"Penegak Laksana","penegak laksana":"Penegak Laksana"},Pandega:{calon:"Calon",pandega:"Pandega"}};return choices[group]?.[key]||raw}
@@ -262,7 +263,7 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
     addSheet("Identitas",[["Data Gudep","Keterangan"],["Tahun laporan",year],["Nomor Gudep Putra",id.numberBoys||""],["Nomor Gudep Putri",id.numberGirls||""],["Pangkalan / Sekolah",id.baseName||""],["Kwartir Ranting",id.kwarran||""],["Kwartir Cabang",id.kwarcab||""],["Alamat",id.address||""],["Ka. Mabigus",id.mabigus||""],["Ketua Gudep",id.leader||""],["Musyawarah Gudep terakhir",id.lastMugus||""],["Kontak Gudep",id.contact||""]],[30,45]);
     const memberRows=[["Golongan","Putra","Putri","Jumlah"],...groups.map(g=>[g,members.filter(m=>m.group===g&&m.gender==="Putra").length,members.filter(m=>m.group===g&&m.gender==="Putri").length,members.filter(m=>m.group===g).length]),["TOTAL",members.filter(m=>m.gender==="Putra").length,members.filter(m=>m.gender==="Putri").length,members.length]];
     addSheet("Peserta Didik",memberRows,[22,14,14,14]);
-    addSheet("Tingkatan TKU",[["Golongan","Tingkatan TKU","Putra","Putri","Jumlah"],...tkuLevelRows(members)],[22,28,14,14,14]);
+    addSheet("Tingkatan Tertinggi",[["Golongan","Tingkatan tertinggi","Putra","Putri","Jumlah"],...tkuLevelRows(members)],[22,28,14,14,14]);
     const garudaRows=[["Golongan","Putra","Putri","Jumlah"],...groups.map(g=>[g,members.filter(m=>m.group===g&&m.gender==="Putra"&&m.garuda===g+" Garuda").length,members.filter(m=>m.group===g&&m.gender==="Putri"&&m.garuda===g+" Garuda").length,members.filter(m=>m.group===g&&m.garuda===g+" Garuda").length])];
     const tkkRows=[["Golongan","Tingkat TKK tertinggi","Putra","Putri","Jumlah"]];groups.forEach(g=>(tkkByGroup[g]||[]).forEach(level=>{const people=members.filter(m=>m.group===g&&m.tkkHighest===level);tkkRows.push([g,level,people.filter(m=>m.gender==="Putra").length,people.filter(m=>m.gender==="Putri").length,people.length])}));
     addSheet("Garuda dan TKK",[...garudaRows,[],...tkkRows],[22,30,14,14,14]);
@@ -286,7 +287,7 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
     const member=countTable("B. Potensi Peserta Didik",rows,["Golongan","Putra","Putri","Jumlah"]);
     const skuGroups=["Siaga","Penggalang","Penegak","Pandega"];
     const tkuRows=tkuLevelRows(mem);
-    const sku=countTable("C. Tingkatan TKU yang tercatat",tkuRows,["Golongan","Tingkatan TKU","Putra","Putri","Jumlah"]);
+    const sku=countTable("C. Tingkatan tertinggi peserta didik",tkuRows,["Golongan","Tingkatan tertinggi","Putra","Putri","Jumlah"]);
     const garudaRows=skuGroups.map(g=>{const boys=mem.filter(m=>m.group===g&&m.gender==="Putra"&&m.garuda===g+" Garuda").length;const girls=mem.filter(m=>m.group===g&&m.gender==="Putri"&&m.garuda===g+" Garuda").length;return [g,boys,girls,boys+girls]});garudaRows.push(["TOTAL",garudaRows.reduce((n,r)=>n+r[1],0),garudaRows.reduce((n,r)=>n+r[2],0),garudaRows.reduce((n,r)=>n+r[3],0)]);const garudaTable=countTable("D. Status Pramuka Garuda",garudaRows,["Golongan","Putra","Putri","Jumlah"]);
     const tkkRows=skuGroups.map(g=>[g,(tkkByGroup[g]||[]).map(t=>t+": "+mem.filter(m=>m.group===g&&m.tkkHighest===t).length).join("; ")||"—"]);
     const tkkTable=countTable("E. Tingkat TKK tertinggi yang tercatat",tkkRows,["Golongan","Tingkat tertinggi"]);
@@ -316,10 +317,10 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
       return '<h2 class="roster-section">'+title+'</h2><table><thead><tr>'+headers.map(h=>'<th>'+h+'</th>').join("")+'</tr></thead><tbody>'+(rows.length?rows.map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join("")+'</tr>').join(""):'<tr><td colspan="'+headers.length+'" style="text-align:center">Belum ada data.</td></tr>')+'</tbody></table>';
     }
     const sharedHeaders=["No","KTA","Nama","Pa/Pi","Tempat lahir","Tanggal lahir","Agama","Usia"];
-    const studentHeaders=sharedHeaders.concat(["Tingkatan TKU","Pramuka Garuda","TKK tertinggi","Gol S/G/T/D","Gol Darah","Alamat","Telp"]);
+    const studentHeaders=sharedHeaders.concat(["Tingkatan tertinggi","Pramuka Garuda","TKK tertinggi","Gol S/G/T/D","Gol Darah","Alamat","Telp"]);
     const studentTable=table("PESERTA DIDIK",studentHeaders,members,(p,i)=>{
       const garuda=p.garuda||"";
-      return [i+1,val(p,"kta",p.code),p.name,p.gender==="Putra"?"Pa":p.gender==="Putri"?"Pi":p.gender,val(p,"birthPlace"),born(p),val(p,"religion"),ageToday(p.birthDate),normalizeTku(val(p,"level"),p.group),garuda,val(p,"tkkHighest"),val(p,"group"),val(p,"blood"),val(p,"address"),val(p,"phone")];
+      return [i+1,val(p,"kta",p.code),p.name,p.gender==="Putra"?"Pa":p.gender==="Putri"?"Pi":p.gender,val(p,"birthPlace"),born(p),val(p,"religion"),ageToday(p.birthDate),highestMemberLevel(p),garuda,val(p,"tkkHighest"),val(p,"group"),val(p,"blood"),val(p,"address"),val(p,"phone")];
     });
     const adultHeaders=sharedHeaders.concat(["Pramuka / jabatan","Diluar","Nomor SHB/SHL","Kursus","Gol. peserta didik yang dibina","Gol Darah","Alamat","Telp"]);
     const adultTable=table("PEMBINA DAN ANGGOTA DEWASA",adultHeaders,adults,(p,i)=>{
