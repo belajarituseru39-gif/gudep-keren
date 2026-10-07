@@ -287,7 +287,7 @@ body.print-report #print-area{font-size:8.5pt;line-height:1.25}body.print-report
     const skuGroups=["Siaga","Penggalang","Penegak","Pandega"];
     const tkuRows=tkuLevelRows(mem);
     const sku=countTable("C. Tingkatan TKU yang tercatat",tkuRows,["Golongan","Tingkatan TKU","Putra","Putri","Jumlah"]);
-    const garudaTable=countTable("D. Status Pramuka Garuda",skuGroups.map(g=>[g,mem.filter(m=>m.garuda===g+" Garuda").length]),["Golongan","Jumlah Pramuka Garuda"]);
+    const garudaRows=skuGroups.map(g=>{const boys=mem.filter(m=>m.group===g&&m.gender==="Putra"&&m.garuda===g+" Garuda").length;const girls=mem.filter(m=>m.group===g&&m.gender==="Putri"&&m.garuda===g+" Garuda").length;return [g,boys,girls,boys+girls]});garudaRows.push(["TOTAL",garudaRows.reduce((n,r)=>n+r[1],0),garudaRows.reduce((n,r)=>n+r[2],0),garudaRows.reduce((n,r)=>n+r[3],0)]);const garudaTable=countTable("D. Status Pramuka Garuda",garudaRows,["Golongan","Putra","Putri","Jumlah"]);
     const tkkRows=skuGroups.map(g=>[g,(tkkByGroup[g]||[]).map(t=>t+": "+mem.filter(m=>m.group===g&&m.tkkHighest===t).length).join("; ")||"—"]);
     const tkkTable=countTable("E. Tingkat TKK tertinggi yang tercatat",tkkRows,["Golongan","Tingkat tertinggi"]);
     const roles=["Pembina","Pembantu Pembina","Mabigus","Pengurus","Lainnya"];
